@@ -1,0 +1,70 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Player {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participations Participant[]
+  sheets         Sheet[]
+}
+
+model RuleSet {
+  id        String   @id @default(cuid())
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  games Game[]
+}
+
+
+model Sheet {
+  id        String   @id @default(cuid())
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  games     Game[]
+  players   Player[]
+}
+
+model Game {
+  id        String   @id @default(cuid())
+  playedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  
+  ruleSetId String
+  ruleSet   RuleSet @relation(fields: [ruleSetId], references: [id])
+
+  sheetId   String?
+  sheet     Sheet?   @relation(fields: [sheetId], references: [id])
+
+  participants Participant[]
+}
+
+model Participant {
+  id        String   @id @default(cuid())
+  gameId    String
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id])
+  
+  score     Int      // 素点 (例: 25000)
+  point     Float    // 計算後のポイント (例: +45.0)
+  chip      Float    @default(0) // チップ (例: +10.0)
+  place     Int      // 順位 (1-4)
+}
