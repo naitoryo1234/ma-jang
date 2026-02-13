@@ -1,7 +1,7 @@
 'use client'
 
 import { createGame } from '@/app/actions/games'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 
 // Initial types based on server data
@@ -19,6 +19,34 @@ export default function ClientSheetDetail({ sheet }: { sheet: SheetData }) {
     const [signs, setSigns] = useState<Record<string, boolean>>({}) // true = negative
     const [topPlayerId, setTopPlayerId] = useState<string | null>(null)
     const [error, setError] = useState('')
+
+    // Persistence Key
+    const STORAGE_KEY = `mahjong_sheet_draft_${sheet.id}`
+
+    // Load from LocalStorage on mount
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY)
+            if (saved) {
+                const data = JSON.parse(saved)
+                if (data.inputs) setInputs(data.inputs)
+                if (data.signs) setSigns(data.signs)
+                if (data.topPlayerId) setTopPlayerId(data.topPlayerId)
+            }
+        } catch (e) {
+            console.error("Failed to load draft", e)
+        }
+    }, [STORAGE_KEY])
+
+    // Save to LocalStorage on change
+    useEffect(() => {
+        try {
+            const data = { inputs, signs, topPlayerId }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+        } catch (e) {
+            console.error("Failed to save draft", e)
+        }
+    }, [inputs, signs, topPlayerId, STORAGE_KEY])
 
     // Calculate totals
     const totals = useMemo(() => {
@@ -138,6 +166,7 @@ export default function ClientSheetDetail({ sheet }: { sheet: SheetData }) {
             setInputs({})
             setSigns({}) // Reset signs
             setTopPlayerId(null) // Reset top selection too? Maybe keep it? Let's reset for safety.
+            localStorage.removeItem(STORAGE_KEY) // Clear draft
             // Actually user might be top again. Let's keep it? 
             // Start fresh is safer to avoid accidental inputs.
             setTopPlayerId(null)
